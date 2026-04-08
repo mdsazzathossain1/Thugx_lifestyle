@@ -171,20 +171,37 @@ const handleValidationErrors = (req, res, next) => {
  */
 const getCorsOptions = () => {
   const allowedOrigins = [
+    // Local development
     'http://localhost:3000',
     'http://localhost:5173',
     'http://localhost:5174',
     'http://127.0.0.1:3000',
     'http://127.0.0.1:5173',
+    // Production URLs - from environment variables
     process.env.FRONTEND_URL,
+    process.env.CLIENT_URL,
+    // Additional allowed origins
     process.env.ALLOWED_ORIGINS?.split(',').map((url) => url.trim()),
+    // Allow all Vercel deployments (thugx-lifestyle-*.vercel.app and thugx-lifestyle.vercel.app)
+    ...(process.env.NODE_ENV === 'production' ? [
+      /^https:\/\/thugx-lifestyle.*\.vercel\.app$/,
+      /^https:\/\/[a-z0-9-]+\.vercel\.app$/,
+    ] : []),
   ].flat().filter(Boolean);
 
   return {
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin) {
+        // Allow requests with no origin (mobile apps, Postman, etc.)
+        callback(null, true);
+      } else if (allowedOrigins.some(allowedOrigin => 
+        allowedOrigin instanceof RegExp 
+          ? allowedOrigin.test(origin) 
+          : allowedOrigin === origin
+      )) {
         callback(null, true);
       } else {
+        console.warn(`CORS blocked origin: ${origin}`);
         callback(new Error('CORS not allowed'));
       }
     },
