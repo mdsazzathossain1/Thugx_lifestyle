@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+client/dist/
+.env
+.env.local
+.env.production
+server/uploads/*
+!server/uploads/.gitkeep
+# Live JSON data (must NOT be committed — persist via hosting volume)
+server/db/data/*.json
+*.log
+.DS_Store
+Thumbs.db
