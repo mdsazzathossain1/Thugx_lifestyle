@@ -1,0 +1,102 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-white text-dark;
+  }
+
+  ::selection {
+    @apply bg-secondary/30 text-primary;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary text-white px-8 py-3 rounded-md font-medium
+           hover:bg-gray-800 transition-all duration-300
+           hover:scale-[1.02] hover:shadow-lg
+           active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply bg-white text-primary border border-primary px-8 py-3 rounded-md font-medium
+           hover:bg-primary hover:text-white transition-all duration-300
+           hover:scale-[1.02] active:scale-[0.98];
+  }
+
+  .btn-gold {
+    @apply bg-secondary text-primary px-8 py-3 rounded-md font-semibold
+           hover:bg-secondary/90 transition-all duration-300
+           hover:scale-[1.02] hover:shadow-lg active:scale-[0.98];
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 border border-border rounded-md
+           focus:outline-none focus:ring-2 focus:ring-secondary/50 focus:border-secondary
+           transition-all duration-200 bg-white;
+  }
+
+  .section-padding {
+    @apply py-16 md:py-24;
+  }
+
+  .container-custom {
+    @apply max-w-container mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .heading-xl {
+    @apply font-heading text-4xl md:text-5xl lg:text-6xl font-bold text-primary;
+  }
+
+  .heading-lg {
+    @apply font-heading text-3xl md:text-4xl font-bold text-primary;
+  }
+
+  .heading-md {
+    @apply font-heading text-2xl md:text-3xl font-semibold text-primary;
+  }
+}
+
+@layer utilities {
+  .animation-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .animation-slide-up {
+    animation: slideUp 0.6s ease-out;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
