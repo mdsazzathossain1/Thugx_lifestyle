@@ -13,6 +13,7 @@ const ProductForm = () => {
   const [loading, setLoading] = useState(isEditing);
   const [submitting, setSubmitting] = useState(false);
   const [media, setMedia] = useState([]);
+  const [localPreviews, setLocalPreviews] = useState({}); // index -> objectURL, shown while uploading
   const [specs, setSpecs] = useState([{ key: '', value: '' }]);
   const [uploading, setUploading] = useState(false);
   const [categories, setCategories] = useState([]);
@@ -65,6 +66,23 @@ const ProductForm = () => {
     const files = e.target.files;
     if (!files?.length) return;
 
+    // Show instant local previews while upload is in progress
+    const previews = {};
+    const startIndex = media.length;
+    Array.from(files).forEach((file, i) => {
+      if (file.type.startsWith('image/')) {
+        previews[startIndex + i] = URL.createObjectURL(file);
+      }
+    });
+    // Add placeholder entries so previews render immediately
+    const placeholders = Array.from(files).map((file) => ({
+      url: '',
+      type: file.type.startsWith('video/') ? 'video' : 'image',
+      _uploading: true,
+    }));
+    setMedia((prev) => [...prev, ...placeholders]);
+    setLocalPreviews((prev) => ({ ...prev, ...previews }));
+
     setUploading(true);
     try {
       const formData = new FormData();
@@ -74,9 +92,28 @@ const ProductForm = () => {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      setMedia((prev) => [...prev, ...data.media]);
+      // Replace placeholders with real uploaded media
+      setMedia((prev) => {
+        const withoutPlaceholders = prev.filter((m) => !m._uploading);
+        return [...withoutPlaceholders, ...data.media];
+      });
+      // Revoke object URLs to free memory
+      Object.values(previews).forEach((url) => URL.revokeObjectURL(url));
+      setLocalPreviews((prev) => {
+        const next = { ...prev };
+        Object.keys(previews).forEach((k) => delete next[k]);
+        return next;
+      });
       toast.success('Media uploaded');
     } catch (err) {
+      // Remove placeholders on failure
+      setMedia((prev) => prev.filter((m) => !m._uploading));
+      Object.values(previews).forEach((url) => URL.revokeObjectURL(url));
+      setLocalPreviews((prev) => {
+        const next = { ...prev };
+        Object.keys(previews).forEach((k) => delete next[k]);
+        return next;
+      });
       toast.error('Upload failed');
     } finally {
       setUploading(false);
@@ -235,7 +272,7 @@ const ProductForm = () => {
             />
             <HiUpload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
             <p className="text-sm text-gray-500">
-              {uploading ? 'Uploading...' : 'Click to upload images or videos'}
+              {uploading ? 'Uploading to cloud...' : 'Click to upload images or videos'}
             </p>
             <p className="text-xs text-gray-400 mt-1">JPEG, PNG, WebP, MP4, WebM (max 20MB)</p>
           </label>
@@ -243,34 +280,50 @@ const ProductForm = () => {
           {/* Media Preview */}
           {media.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {media.map((item, index) => (
-                <div key={index} className="relative group rounded-lg overflow-hidden border border-border">
-                  {item.type === 'video' ? (
-                    <div className="aspect-square bg-gray-100 flex items-center justify-center">
-                      <span className="text-sm text-gray-500">Video</span>
-                    </div>
-                  ) : (
-                    <img
-                      src={item.url}
-                      alt={`Media ${index}`}
-                      className="aspect-square w-full object-cover"
-                      onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }}
-                    />
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => removeMedia(index)}
-                    className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <HiTrash className="w-3 h-3" />
-                  </button>
-                  {index === 0 && (
-                    <span className="absolute bottom-1 left-1 bg-secondary text-primary text-xs px-1.5 py-0.5 rounded font-medium">
-                      Primary
-                    </span>
-                  )}
-                </div>
-              ))}
+              {media.map((item, index) => {
+                const previewUrl = localPreviews[index] || item.url;
+                const isUploading = item._uploading;
+                return (
+                  <div key={index} className="relative group rounded-lg overflow-hidden border border-border">
+                    {item.type === 'video' ? (
+                      <div className="aspect-square bg-gray-100 flex items-center justify-center">
+                        <span className="text-sm text-gray-500">Video</span>
+                      </div>
+                    ) : previewUrl ? (
+                      <div className="relative">
+                        <img
+                          src={previewUrl}
+                          alt={`Media ${index}`}
+                          className={`aspect-square w-full object-cover transition-opacity ${isUploading ? 'opacity-60' : 'opacity-100'}`}
+                        />
+                        {isUploading && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                            <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="aspect-square bg-gray-100 flex items-center justify-center">
+                        <span className="text-xs text-gray-400">No Image</span>
+                      </div>
+                    )}
+                    {!isUploading && (
+                      <button
+                        type="button"
+                        onClick={() => removeMedia(index)}
+                        className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <HiTrash className="w-3 h-3" />
+                      </button>
+                    )}
+                    {index === 0 && !isUploading && (
+                      <span className="absolute bottom-1 left-1 bg-secondary text-primary text-xs px-1.5 py-0.5 rounded font-medium">
+                        Primary
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

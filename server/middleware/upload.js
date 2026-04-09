@@ -5,16 +5,20 @@ const { Readable } = require('stream');
 
 // ─── Cloudinary (production) or local disk (development) ─────────────────────
 let cloudinary;
-const useCloudinary = !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET);
+// Trim stray leading '=' in case user pasted 'name=value' into Railway value field
+const CLOUDINARY_CLOUD_NAME = (process.env.CLOUDINARY_CLOUD_NAME || '').replace(/^=+/, '').trim();
+const CLOUDINARY_API_KEY    = (process.env.CLOUDINARY_API_KEY    || '').replace(/^=+/, '').trim();
+const CLOUDINARY_API_SECRET = (process.env.CLOUDINARY_API_SECRET || '').replace(/^=+/, '').trim();
+const useCloudinary = !!(CLOUDINARY_CLOUD_NAME && CLOUDINARY_API_KEY && CLOUDINARY_API_SECRET);
 
 if (useCloudinary) {
   cloudinary = require('cloudinary').v2;
   cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key:    process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
+    cloud_name: CLOUDINARY_CLOUD_NAME,
+    api_key:    CLOUDINARY_API_KEY,
+    api_secret: CLOUDINARY_API_SECRET,
   });
-  console.log('☁️  Using Cloudinary for media uploads');
+  console.log(`☁️  Using Cloudinary for media uploads (cloud: ${CLOUDINARY_CLOUD_NAME})`);
 } else {
   console.log('📁 Using local disk for media uploads (set CLOUDINARY_* env vars for production)');
 }
