@@ -5,10 +5,12 @@ const { Readable } = require('stream');
 
 // ─── Cloudinary (production) or local disk (development) ─────────────────────
 let cloudinary;
-// Trim stray leading '=' in case user pasted 'name=value' into Railway value field
-const CLOUDINARY_CLOUD_NAME = (process.env.CLOUDINARY_CLOUD_NAME || '').replace(/^=+/, '').trim();
-const CLOUDINARY_API_KEY    = (process.env.CLOUDINARY_API_KEY    || '').replace(/^=+/, '').trim();
-const CLOUDINARY_API_SECRET = (process.env.CLOUDINARY_API_SECRET || '').replace(/^=+/, '').trim();
+// Trim whitespace FIRST, then remove any stray leading '=' (happens when copying
+// 'name=value' into Railway's variable value field instead of just 'value')
+const sanitizeEnv = (v) => (v || '').trim().replace(/^=+/, '').trim();
+const CLOUDINARY_CLOUD_NAME = sanitizeEnv(process.env.CLOUDINARY_CLOUD_NAME);
+const CLOUDINARY_API_KEY    = sanitizeEnv(process.env.CLOUDINARY_API_KEY);
+const CLOUDINARY_API_SECRET = sanitizeEnv(process.env.CLOUDINARY_API_SECRET);
 const useCloudinary = !!(CLOUDINARY_CLOUD_NAME && CLOUDINARY_API_KEY && CLOUDINARY_API_SECRET);
 
 if (useCloudinary) {

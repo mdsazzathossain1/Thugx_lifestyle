@@ -136,13 +136,17 @@ const Product = mongoose.model('Product', productSchema);
 const orderSchema = new mongoose.Schema({
   orderNumber: { type: String, unique: true, sparse: true },
   customer: {
-    name:       String,
-    email:      String,
-    phone:      String,
-    address:    String,
-    city:       String,
-    district:   String,
-    postalCode: String,
+    userId:  { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    name:    { type: String, default: '' },
+    email:   { type: String, default: '' },
+    phone:   { type: String, default: '' },
+    address: {
+      street:  { type: String, default: '' },
+      city:    { type: String, default: '' },
+      state:   { type: String, default: '' },
+      zipCode: { type: String, default: '' },
+      country: { type: String, default: 'Bangladesh' },
+    },
   },
   items: [{
     productId:    { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
@@ -152,14 +156,15 @@ const orderSchema = new mongoose.Schema({
     price:        Number,
     subtotal:     Number,
   }],
-  deliveryType:   { type: String, default: 'inside_dhaka' },
-  paymentType:    { type: String, default: 'full' },
-  subtotal:       Number,
-  deliveryCharge: Number,
-  couponDiscount: { type: Number, default: 0 },
-  couponCode:     String,
-  totalAmount:    Number,
-  status:         { type: String, default: 'pending' },
+  deliveryType:    { type: String, default: 'inside_dhaka' },
+  paymentType:     { type: String, default: 'full' },
+  productSubtotal: { type: Number, default: 0 },
+  deliveryCharge:  { type: Number, default: 0 },
+  couponDiscount:  { type: Number, default: 0 },
+  couponCode:      String,
+  paymentAmount:   { type: Number, default: 0 },
+  totalAmount:     { type: Number, default: 0 },
+  status:          { type: String, default: 'pending' },
   statusHistory: [{
     status:    String,
     timestamp: { type: Date, default: Date.now },
@@ -172,7 +177,6 @@ const orderSchema = new mongoose.Schema({
     submittedAt:      Date,
   },
   adminNotes: { type: String, default: '' },
-  userId:     { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: true });
 
 const Order = mongoose.model('Order', orderSchema);
