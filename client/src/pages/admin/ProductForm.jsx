@@ -17,7 +17,9 @@ const ProductForm = () => {
   const [uploading, setUploading] = useState(false);
   const [categories, setCategories] = useState([]);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm();
+  const { register, handleSubmit, reset, formState: { errors } } = useForm({
+    defaultValues: { isActive: true, featured: false },
+  });
 
   // Load categories from settings
   useEffect(() => {

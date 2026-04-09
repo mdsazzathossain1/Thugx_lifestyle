@@ -29,7 +29,7 @@ const Products = () => {
       if (category) params.set('category', category);
       params.set('limit', '50');
 
-      const { data } = await adminApi.get(`/admin/products?${params}`);
+      const { data } = await adminApi.get(`/api/admin/products?${params}`);
       setProducts(data.products);
     } catch (err) {
       console.error('Failed to fetch products:', err);
@@ -50,7 +50,7 @@ const Products = () => {
   const handleDelete = async (id, name) => {
     if (!window.confirm(`Delete "${name}"? This cannot be undone.`)) return;
     try {
-        await adminApi.delete(`/api/admin/products/${id}`);
+        await adminApi.delete(`/admin/products/${id}`);
       toast.success('Product deleted');
       setProducts((prev) => prev.filter((p) => p._id !== id));
     } catch (err) {
