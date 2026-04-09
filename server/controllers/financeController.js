@@ -159,6 +159,143 @@ const timeSeries = async (req, res) => {
   }
 };
 
+// ─── Comprehensive Dashboard Endpoint ─────────────────────────────────────
+const getFinanceDashboard = async (req, res) => {
+  try {
+    const { from, to } = req.query;
+    const match = {};
+    if (from || to) {
+      match.date = {};
+      if (from) match.date['$gte'] = new Date(from);
+      if (to)   match.date['$lte'] = new Date(to);
+    }
+
+    // ── 1. KPI totals ──
+    const kpiAgg = await Finance.aggregate([
+      { $match: match },
+      { $group: { _id: '$type', total: { $sum: '$amount' }, count: { $sum: 1 } } },
+    ]);
+    const totals = { cost: 0, revenue: 0, costCount: 0, revenueCount: 0 };
+    for (const r of kpiAgg) {
+      totals[r._id]            = r.total || 0;
+      totals[r._id + 'Count']  = r.count || 0;
+    }
+    const net           = totals.revenue - totals.cost;
+    const profitMargin  = totals.revenue > 0 ? ((net / totals.revenue) * 100).toFixed(1) : '0.0';
+    const roi           = totals.cost    > 0 ? ((net / totals.cost) * 100).toFixed(1)    : '0.0';
+
+    // ── 2. Partner investment & contribution breakdown ──
+    const partnerAgg = await Finance.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: { $ifNull: ['$partner', 'Unassigned'] },
+          invested:  { $sum: { $cond: [{ $eq: ['$type', 'cost'] },    '$amount', 0] } },
+          revenue:   { $sum: { $cond: [{ $eq: ['$type', 'revenue'] }, '$amount', 0] } },
+          txCount:   { $sum: 1 },
+          categories: { $addToSet: '$category' },
+        },
+      },
+      { $sort: { invested: -1 } },
+    ]);
+    const totalInvested = partnerAgg.reduce((s, p) => s + (p.invested || 0), 0) || 1;
+    const partners = partnerAgg.map(p => ({
+      name:        p._id,
+      invested:    p.invested,
+      revenue:     p.revenue,
+      share:       +((p.invested / totalInvested) * 100).toFixed(1),
+      net:         p.revenue - p.invested,
+      txCount:     p.txCount,
+      categories:  p.categories.filter(Boolean),
+    }));
+
+    // ── 3. Cost breakdown by category ──
+    const catAgg = await Finance.aggregate([
+      { $match: { ...match, type: 'cost' } },
+      { $group: { _id: { $ifNull: ['$category', 'general'] }, total: { $sum: '$amount' }, count: { $sum: 1 } } },
+      { $sort: { total: -1 } },
+    ]);
+    const costByCategory = catAgg.map(c => ({ category: c._id, total: c.total, count: c.count }));
+
+    // ── 4. Revenue breakdown by category ──
+    const revCatAgg = await Finance.aggregate([
+      { $match: { ...match, type: 'revenue' } },
+      { $group: { _id: { $ifNull: ['$category', 'general'] }, total: { $sum: '$amount' }, count: { $sum: 1 } } },
+      { $sort: { total: -1 } },
+    ]);
+    const revenueByCategory = revCatAgg.map(c => ({ category: c._id, total: c.total, count: c.count }));
+
+    // ── 5. Monthly time series (last 12 months) ──
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 11);
+    twelveMonthsAgo.setDate(1);
+    twelveMonthsAgo.setHours(0, 0, 0, 0);
+    const monthlyAgg = await Finance.aggregate([
+      { $match: { date: { $gte: twelveMonthsAgo } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m', date: '$date' } },
+          revenue: { $sum: { $cond: [{ $eq: ['$type', 'revenue'] }, '$amount', 0] } },
+          cost:    { $sum: { $cond: [{ $eq: ['$type', 'cost'] },    '$amount', 0] } },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+    const monthly = monthlyAgg.map(m => ({
+      month:   m._id,
+      revenue: m.revenue,
+      cost:    m.cost,
+      net:     m.revenue - m.cost,
+    }));
+
+    // ── 6. Recent revenue transactions (last 30) ──
+    const recentRevenue = await Finance.find({ ...match, type: 'revenue' })
+      .sort({ date: -1 }).limit(30).lean();
+
+    // ── 7. Recent cost transactions (last 30) ──
+    const recentCosts = await Finance.find({ ...match, type: 'cost' })
+      .sort({ date: -1 }).limit(30).lean();
+
+    // ── 8. Source of funds breakdown ──
+    const sourceAgg = await Finance.aggregate([
+      { $match: { ...match, type: 'cost', source: { $ne: null } } },
+      { $group: { _id: '$source', total: { $sum: '$amount' }, count: { $sum: 1 } } },
+      { $sort: { total: -1 } },
+    ]);
+
+    // ── 9. Partner-wise time trend (per quarter) ──
+    const partnerTrendAgg = await Finance.aggregate([
+      { $match: { ...match, partner: { $ne: null } } },
+      {
+        $group: {
+          _id: {
+            partner: '$partner',
+            month:   { $dateToString: { format: '%Y-%m', date: '$date' } },
+            type:    '$type',
+          },
+          total: { $sum: '$amount' },
+        },
+      },
+      { $sort: { '_id.month': 1 } },
+    ]);
+
+    res.json({
+      kpi: { ...totals, net, profitMargin: parseFloat(profitMargin), roi: parseFloat(roi) },
+      partners,
+      costByCategory,
+      revenueByCategory,
+      monthly,
+      recentRevenue,
+      recentCosts,
+      sourceOfFunds: sourceAgg.map(s => ({ source: s._id, total: s.total, count: s.count })),
+      partnerTrend: partnerTrendAgg,
+    });
+  } catch (err) {
+    console.error('Finance dashboard error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
 module.exports = {
   createFinanceItem,
   updateFinanceItem,
@@ -168,4 +305,5 @@ module.exports = {
   summaryByPartner,
   summaryByProduct,
   timeSeries,
+  getFinanceDashboard,
 };

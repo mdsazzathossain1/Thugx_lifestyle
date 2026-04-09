@@ -37,6 +37,7 @@ const {
   summaryByPartner,
   summaryByProduct,
   timeSeries,
+  getFinanceDashboard,
 } = require('../controllers/financeController');
 
 // Public - Debug password comparison (TEST ENDPOINT - REMOVE IN PRODUCTION)
@@ -182,6 +183,7 @@ router.put('/coupons/:id', updateCoupon);
 router.delete('/coupons/:id', deleteCoupon);
 
 // Finance (costs & revenues)
+router.get('/finances/dashboard', getFinanceDashboard);
 router.get('/finances', listFinanceItems);
 router.post('/finances', createFinanceItem);
 router.put('/finances/:id', updateFinanceItem);
