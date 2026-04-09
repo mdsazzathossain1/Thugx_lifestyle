@@ -7,13 +7,29 @@ const nodemailer = require('nodemailer');
 
 // Initialize transporter (configure based on environment)
 const getTransporter = () => {
+  // Try Mailgun first (preferred for production)
+  if (process.env.EMAIL_SERVICE === 'mailgun' && process.env.MAILGUN_DOMAIN && process.env.MAILGUN_API_KEY) {
+    console.log('📧 Using Mailgun for email service');
+    return nodemailer.createTransport({
+      host: 'smtp.mailgun.org',
+      port: 587,
+      secure: false, // false for port 587 (STARTTLS)
+      auth: {
+        user: `postmaster@${process.env.MAILGUN_DOMAIN}`,
+        pass: process.env.MAILGUN_API_KEY,
+      },
+      connectionTimeout: 5000,
+      socketTimeout: 5000,
+    });
+  }
+  
   if (process.env.EMAIL_SERVICE === 'gmail') {
     // Gmail setup (for development)
     // Use explicit SMTP host/port to avoid relying on service name resolution.
     const host = process.env.SMTP_HOST || 'smtp.gmail.com';
     const port = parseInt(process.env.SMTP_PORT, 10) || 465;
     const secure = port === 465;
-    console.log('Email transporter config:', { host, port, secure, user: process.env.EMAIL_USER ? 'set' : 'unset' });
+    console.log('📧 Using Gmail for email service:', { host, port, secure, user: process.env.EMAIL_USER ? 'set' : 'unset' });
     return nodemailer.createTransport({
       host,
       port,
@@ -29,18 +45,37 @@ const getTransporter = () => {
         rejectUnauthorized: process.env.NODE_ENV === 'production',
       },
     });
-  } else {
+  } else if (process.env.SMTP_HOST) {
     // Custom SMTP (for production)
+    console.log('📧 Using custom SMTP for email service');
     return nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: process.env.SMTP_PORT,
-      secure: true, // true for 465, false for other ports
+      secure: true,
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASSWORD,
       },
     });
+  } else {
+    console.warn('⚠️  No email service configured. Falling back to console logging.');
+    return {
+      sendMail: async (mailOptions) => {
+        console.log('📧 Email would be sent to:', mailOptions.to);
+        return { messageId: 'console-mock' };
+      }
+    };
   }
+};
+
+/**
+ * Get the correct from email address based on service
+ */
+const getFromEmail = () => {
+  if (process.env.EMAIL_SERVICE === 'mailgun' && process.env.MAILGUN_FROM) {
+    return process.env.MAILGUN_FROM;
+  }
+  return process.env.EMAIL_FROM || process.env.EMAIL_USER || 'noreply@thugxlifestyle.com';
 };
 
 /**
@@ -58,7 +93,7 @@ const sendVerificationEmail = async (email, verificationToken, userName) => {
     const verificationLink = `${frontendUrl}/verify-email?token=${verificationToken}&email=${encodeURIComponent(email)}`;
 
     const mailOptions = {
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      from: getFromEmail(),
       to: email,
       subject: 'Verify Your Email - Thugx Lifestyle',
       html: `
@@ -124,7 +159,7 @@ const sendPasswordResetEmail = async (email, resetToken, userName) => {
     const resetLink = `${frontendUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
 
     const mailOptions = {
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      from: getFromEmail(),
       to: email,
       subject: 'Reset Your Password - Thugx Lifestyle',
       html: `
@@ -194,7 +229,7 @@ const sendPasswordChangedEmail = async (email, userName) => {
     const transporter = getTransporter();
 
     const mailOptions = {
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      from: getFromEmail(),
       to: email,
       subject: 'Your Password Has Been Changed - Thugx Lifestyle',
       html: `
@@ -251,7 +286,7 @@ const sendOTPEmail = async (email, otp, purpose = 'reset', userName = '') => {
     const minutes = process.env.OTP_EXPIRES_MINUTES || 10;
     const subject = purpose === 'registration' ? 'Your Verification Code' : 'Your Password Reset Code';
     const mailOptions = {
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      from: getFromEmail(),
       to: email,
       subject,
       html: `

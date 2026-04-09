@@ -107,14 +107,12 @@ async function seedLocalStore() {
     }
 
     // Seed products
-    const { getCollection } = require('./store');
-    const productCol = getCollection('products');
-    const count = await productCol.countDocuments();
+    const count = await Product.countDocuments();
     if (count === 0) {
       for (const p of sampleProducts) {
-        await productCol.create(p);
+        await Product.create(p);
       }
-      console.log(`✅ ${sampleProducts.length} sample products seeded`);
+      console.log(`\u2705 ${sampleProducts.length} sample products seeded`);
     }
 
     // Seed default settings

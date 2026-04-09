@@ -5,7 +5,8 @@ const path = require('path');
 // Load environment variables from the server folder .env explicitly
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
-const seedLocalStore = require('./db/seed');
+const connectDB = require('./config/db');
+const seedDB    = require('./db/seed');
 
 // Security middleware imports
 const {
@@ -32,18 +33,7 @@ const app = express();
 // Trust proxy - REQUIRED for Railway and other reverse proxies
 app.set('trust proxy', 1);
 
-// Initialize local data store and seed default data
-seedLocalStore().then(() => {
-  console.log('Local data store ready');
-}).catch(err => console.error('Seed error:', err.message));
-
-// Try MongoDB connection optionally (won't crash if unavailable)
-try {
-  const connectDB = require('./config/db');
-  connectDB().catch(err => console.log('MongoDB unavailable, using local store'));
-} catch (e) {
-  console.log('Running with local JSON store (no MongoDB)');
-}
+// MongoDB + seed will be called in startServer() below
 
 // ─── SECURITY MIDDLEWARE ──────────────────────────────────────────────────
 // Helmet - Set security HTTP headers
@@ -115,6 +105,21 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+
+async function startServer() {
+  // 1. Connect MongoDB (required — app cannot function without it)
+  await connectDB();
+
+  // 2. Seed default data (admin, products, settings) if DB is empty
+  await seedDB();
+
+  // 3. Start listening
+  app.listen(PORT, () => {
+    console.log(`✅ Server running on port ${PORT}`);
+  });
+}
+
+startServer().catch(err => {
+  console.error('❌ Failed to start server:', err.message);
+  process.exit(1);
 });
