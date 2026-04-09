@@ -117,7 +117,7 @@ const Coupons = () => {
   const handleDelete = async (id, code) => {
     if (confirm(`Delete coupon "${code}"?`)) {
       try {
-        await adminApi.delete(`/admin/coupons/${id}`);
+        await adminApi.delete(`/api/admin/coupons/${id}`);
         toast.success('Coupon deleted');
         fetchCoupons();
       } catch (err) {
@@ -128,7 +128,7 @@ const Coupons = () => {
 
   const handleToggleActive = async (coupon) => {
     try {
-      await adminApi.put(`/admin/coupons/${coupon._id}`, {
+      await adminApi.put(`/api/admin/coupons/${coupon._id}`, {
         isActive: !coupon.isActive,
       });
       fetchCoupons();

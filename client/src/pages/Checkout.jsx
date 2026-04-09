@@ -55,7 +55,7 @@ const Checkout = () => {
   const [validatingCoupon, setValidatingCoupon] = useState(false);
 
   useEffect(() => {
-    api.get('/settings').then((r) => setSettings(r.data)).catch(() => {});
+    api.get('/api/settings').then((r) => setSettings(r.data)).catch(() => {});
   }, []);
 
   const deliveryCharge = settings
@@ -75,7 +75,7 @@ const Checkout = () => {
 
     setValidatingCoupon(true);
     try {
-      const { data } = await api.post('/coupons/validate', {
+      const { data } = await api.post('/api/coupons/validate', {
         code: couponCode.trim(),
         orderAmount: subtotal,
         userId: user?._id,
@@ -140,7 +140,7 @@ const Checkout = () => {
         couponCode: appliedCoupon?.code || null,
       };
 
-      const { data } = await api.post('/orders', orderData);
+      const { data } = await api.post('/api/orders', orderData);
       clearCart();
       toast.success('Order placed successfully!');
       navigate(`/order/${data.orderNumber}/payment`);

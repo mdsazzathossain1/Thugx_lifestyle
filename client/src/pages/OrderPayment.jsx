@@ -26,8 +26,8 @@ const OrderPayment = () => {
     const load = async () => {
       try {
         const [{ data: o }, { data: s }] = await Promise.all([
-          api.get(`/orders/${orderNumber}`),
-          api.get('/settings'),
+          api.get(`/api/orders/${orderNumber}`),
+          api.get('/api/settings'),
         ]);
         setOrder(o);
         setSettings(s);
@@ -52,7 +52,7 @@ const OrderPayment = () => {
       if (formData.transactionProof?.[0]) {
         fd.append('transactionProof', formData.transactionProof[0]);
       }
-      await api.put(`/orders/${orderNumber}/payment`, fd, {
+      await api.put(`/api/orders/${orderNumber}/payment`, fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       toast.success('Payment details submitted!');

@@ -20,11 +20,11 @@ const ProductDetail = () => {
     const fetchProduct = async () => {
       setLoading(true);
       try {
-        const { data } = await api.get(`/products/${id}`);
+        const { data } = await api.get(`/api/products/${id}`);
         setProduct(data);
 
         // Fetch related products
-        const { data: relatedData } = await api.get(`/products?category=${data.category}&limit=4`);
+        const { data: relatedData } = await api.get(`/api/products?category=${data.category}&limit=4`);
         setRelated(relatedData.products.filter((p) => p._id !== id).slice(0, 4));
       } catch (err) {
         console.error('Failed to fetch product:', err);

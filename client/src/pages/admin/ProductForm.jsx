@@ -21,7 +21,7 @@ const ProductForm = () => {
 
   // Load categories from settings
   useEffect(() => {
-    api.get('/settings').then((r) => {
+    api.get('/api/settings').then((r) => {
       setCategories(r.data.categories || []);
     }).catch(() => {
       // fallback to defaults if API fails

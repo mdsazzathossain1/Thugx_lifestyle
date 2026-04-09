@@ -25,7 +25,7 @@ const Shop = () => {
         params.set('page', currentPage.toString());
         params.set('limit', '20');
 
-        const { data } = await api.get(`/products?${params}`);
+        const { data } = await api.get(`/api/products?${params}`);
         setProducts(data.products);
         setTotalPages(data.totalPages);
       } catch (err) {
@@ -38,7 +38,7 @@ const Shop = () => {
   }, [category, currentSort, currentPage]);
 
   useEffect(() => {
-    api.get('/settings').then((r) => {
+    api.get('/api/settings').then((r) => {
       setCategories(r.data.categories || []);
     }).catch(() => {
       setCategories([{ slug: 'watches', label: 'Watches' }, { slug: 'sunglasses', label: 'Sunglasses' }]);

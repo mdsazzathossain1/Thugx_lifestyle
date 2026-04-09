@@ -95,7 +95,7 @@ const OrderHistory = () => {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const { data } = await api.get('/auth/orders');
+        const { data } = await api.get('/api/auth/orders');
         setOrders(data);
       } catch (err) {
         console.error('Failed to fetch orders:', err);

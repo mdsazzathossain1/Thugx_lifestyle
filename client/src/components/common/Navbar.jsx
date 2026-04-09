@@ -13,7 +13,7 @@ const Navbar = () => {
   const [categories, setCategories] = useState([]);
 
   useEffect(() => {
-    api.get('/settings').then((r) => {
+    api.get('/api/settings').then((r) => {
       setCategories(r.data.categories || []);
     }).catch(() => {
       setCategories([{ slug: 'watches', label: 'Watches' }, { slug: 'sunglasses', label: 'Sunglasses' }]);

@@ -21,7 +21,7 @@ const Home = () => {
   const [categories, setCategories] = useState([]);
 
   useEffect(() => {
-    api.get('/settings').then((r) => {
+    api.get('/api/settings').then((r) => {
       setCategories(r.data.categories || []);
     }).catch(() => {
       setCategories([{ slug: 'watches', label: 'Watches' }, { slug: 'sunglasses', label: 'Sunglasses' }]);
@@ -31,7 +31,7 @@ const Home = () => {
   useEffect(() => {
     const fetchFeatured = async () => {
       try {
-        const { data } = await api.get('/products/featured');
+        const { data } = await api.get('/api/products/featured');
         setFeatured(data);
       } catch (err) {
         console.error('Failed to fetch featured products:', err);
