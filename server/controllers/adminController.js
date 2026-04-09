@@ -3,6 +3,7 @@ const Order = require('../models/Order');
 const Product = require('../models/Product');
 const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
+const { uploadToCloudinary, useCloudinary } = require('../middleware/upload');
 
 // POST /api/admin/login
 const adminLogin = async (req, res) => {
@@ -247,16 +248,36 @@ const uploadMedia = async (req, res) => {
       return res.status(400).json({ message: 'No files uploaded' });
     }
 
-    const media = req.files.map((file, index) => ({
-      type: file.mimetype.startsWith('video/') ? 'video' : 'image',
-      url: `/uploads/${file.filename}`,
-      altText: '',
-      order: index,
-    }));
+    let media;
+
+    if (useCloudinary) {
+      // Upload each file buffer to Cloudinary
+      media = await Promise.all(
+        req.files.map(async (file, index) => {
+          const url = await uploadToCloudinary(file.buffer, file.mimetype, file.originalname);
+          return {
+            type: file.mimetype.startsWith('video/') ? 'video' : 'image',
+            url,
+            altText: '',
+            order: index,
+          };
+        })
+      );
+    } else {
+      // Local disk (development) — build absolute URL using BACKEND_URL
+      const backendUrl = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
+      media = req.files.map((file, index) => ({
+        type: file.mimetype.startsWith('video/') ? 'video' : 'image',
+        url: `${backendUrl}/uploads/${file.filename}`,
+        altText: '',
+        order: index,
+      }));
+    }
 
     res.json({ media });
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Upload error:', error.message);
+    res.status(500).json({ message: 'Upload failed', error: error.message });
   }
 };
 
