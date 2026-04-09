@@ -29,6 +29,9 @@ const { validateCoupon } = require('./controllers/couponController');
 
 const app = express();
 
+// Trust proxy - REQUIRED for Railway and other reverse proxies
+app.set('trust proxy', 1);
+
 // Initialize local data store and seed default data
 seedLocalStore().then(() => {
   console.log('Local data store ready');
