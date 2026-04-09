@@ -22,6 +22,8 @@ const getTransporter = () => {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASSWORD, // Use App Password, not regular password
       },
+      connectionTimeout: 5000, // 5 second timeout for faster fallback
+      socketTimeout: 5000,     // 5 second socket timeout
       tls: {
         // allow self-signed certs if env requires it
         rejectUnauthorized: process.env.NODE_ENV === 'production',
