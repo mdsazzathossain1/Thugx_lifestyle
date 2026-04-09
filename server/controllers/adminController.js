@@ -8,17 +8,23 @@ const generateToken = require('../utils/generateToken');
 const adminLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log('🔐 Admin login attempt:', email);
 
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
     const admin = await Admin.findOne({ email });
+    console.log('👤 Admin found:', admin ? `Yes - ${admin.email}` : 'No');
+    
     if (!admin) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    console.log('🔑 Password provided. Comparing with stored hash...');
     const isMatch = await admin.comparePassword(password);
+    console.log('✔️ Password match result:', isMatch ? 'TRUE' : 'FALSE');
+    
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
