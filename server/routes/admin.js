@@ -194,4 +194,20 @@ router.get('/finances/summary/timeseries', timeSeries);
 // Users list (for coupon assignment)
 router.get('/users', getUsersList);
 
+// Manually verify user email (for users stuck with emailVerified=false due to email delivery issues)
+router.put('/users/:email/verify', async (req, res) => {
+  try {
+    const { User } = require('../db/models');
+    const user = await User.findOneAndUpdate(
+      { email: req.params.email },
+      { emailVerified: true, otpHash: null, otpExpires: null, otpPurpose: null, otpAttempts: 0 },
+      { new: true }
+    );
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ message: `User ${user.email} verified successfully`, emailVerified: user.emailVerified });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

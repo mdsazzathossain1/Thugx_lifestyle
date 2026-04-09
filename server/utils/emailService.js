@@ -23,8 +23,25 @@ const getTransporter = () => {
     });
   }
   
+  if (process.env.EMAIL_SERVICE === 'brevo') {
+    // Brevo (ex-Sendinblue) — free 300/day, no domain verification needed, works on Railway
+    console.log('📧 Using Brevo SMTP for email service');
+    return nodemailer.createTransport({
+      host: 'smtp-relay.brevo.com',
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.BREVO_USER,   // your Brevo account email
+        pass: process.env.BREVO_SMTP_KEY, // SMTP key from Brevo dashboard
+      },
+      connectionTimeout: 10000,
+      socketTimeout: 10000,
+    });
+  }
+
   if (process.env.EMAIL_SERVICE === 'resend') {
-    // Resend.com — free tier (3000/month), works on Railway, no credit card
+    // Resend.com — NOTE: requires a verified custom domain to send to arbitrary emails.
+    // With onboarding@resend.dev you can ONLY send to your own Resend account email.
     console.log('📧 Using Resend SMTP for email service');
     return nodemailer.createTransport({
       host: 'smtp.resend.com',
@@ -81,6 +98,9 @@ const getTransporter = () => {
  * Get the correct from email address based on service
  */
 const getFromEmail = () => {
+  if (process.env.EMAIL_SERVICE === 'brevo' && process.env.BREVO_FROM) {
+    return process.env.BREVO_FROM;
+  }
   if (process.env.EMAIL_SERVICE === 'resend' && process.env.RESEND_FROM) {
     return process.env.RESEND_FROM;
   }

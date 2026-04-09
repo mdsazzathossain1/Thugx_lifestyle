@@ -52,19 +52,19 @@ const register = async (req, res) => {
       console.log(`✅ OTP sent to ${email}`);
     } catch (emailError) {
       console.error('⚠️  OTP sending failed:', emailError.message);
-      // If email fails (e.g., in production without SMTP), auto-verify user so they can login
-      console.log(`⚠️  Email service unavailable. Auto-verifying user ${email} for login.`);
-      await User.findByIdAndUpdate(user._id, { emailVerified: true });
+      // Delete the user so they can try registering again once email is fixed
+      await User.findByIdAndDelete(user._id);
+      return res.status(503).json({
+        message: 'Registration failed: could not send verification email. Please try again later.',
+      });
     }
 
     res.status(201).json({
-      message: emailSent 
-        ? 'Registration successful! Please check your email to verify your account.'
-        : 'Registration successful! You can now log in.',
+      message: 'Registration successful! Please check your email for the verification code.',
       _id: user._id,
       name: user.name,
       email: user.email,
-      emailVerified: true, // Show as verified so frontend knows they can login
+      emailVerified: false,
     });
   } catch (error) {
     console.error('Register error:', error);

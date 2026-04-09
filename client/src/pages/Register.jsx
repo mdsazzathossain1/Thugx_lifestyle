@@ -55,7 +55,6 @@ const Register = () => {
 
       const result = await res.json();
       if (res.ok) {
-        // don't auto-login; show OTP verification UI
         setRegisteredEmail(data.email);
         setRegistrationSuccess(true);
         toast.success(result.message || 'Account created! Please verify your email.');
