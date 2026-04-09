@@ -23,27 +23,36 @@ const getTransporter = () => {
     });
   }
   
-  if (process.env.EMAIL_SERVICE === 'gmail') {
-    // Gmail setup (for development)
-    // Use explicit SMTP host/port to avoid relying on service name resolution.
-    const host = process.env.SMTP_HOST || 'smtp.gmail.com';
-    const port = parseInt(process.env.SMTP_PORT, 10) || 465;
-    const secure = port === 465;
-    console.log('📧 Using Gmail for email service:', { host, port, secure, user: process.env.EMAIL_USER ? 'set' : 'unset' });
+  if (process.env.EMAIL_SERVICE === 'resend') {
+    // Resend.com — free tier (3000/month), works on Railway, no credit card
+    console.log('📧 Using Resend SMTP for email service');
     return nodemailer.createTransport({
-      host,
-      port,
-      secure,
+      host: 'smtp.resend.com',
+      port: 587,
+      secure: false,
+      auth: {
+        user: 'resend',
+        pass: process.env.RESEND_API_KEY,
+      },
+      connectionTimeout: 10000,
+      socketTimeout: 10000,
+    });
+  }
+
+  if (process.env.EMAIL_SERVICE === 'gmail') {
+    // Gmail via port 587 STARTTLS — port 465 is often blocked on Railway
+    console.log('📧 Using Gmail (port 587) for email service');
+    return nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false, // STARTTLS — more reliable than port 465 on cloud hosts
       auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD, // Use App Password, not regular password
+        pass: process.env.EMAIL_PASSWORD,
       },
-      connectionTimeout: 5000, // 5 second timeout for faster fallback
-      socketTimeout: 5000,     // 5 second socket timeout
-      tls: {
-        // allow self-signed certs if env requires it
-        rejectUnauthorized: process.env.NODE_ENV === 'production',
-      },
+      connectionTimeout: 10000,
+      socketTimeout: 10000,
+      tls: { rejectUnauthorized: false },
     });
   } else if (process.env.SMTP_HOST) {
     // Custom SMTP (for production)
@@ -72,6 +81,9 @@ const getTransporter = () => {
  * Get the correct from email address based on service
  */
 const getFromEmail = () => {
+  if (process.env.EMAIL_SERVICE === 'resend' && process.env.RESEND_FROM) {
+    return process.env.RESEND_FROM;
+  }
   if (process.env.EMAIL_SERVICE === 'mailgun' && process.env.MAILGUN_FROM) {
     return process.env.MAILGUN_FROM;
   }
