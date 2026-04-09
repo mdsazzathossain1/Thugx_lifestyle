@@ -36,7 +36,7 @@ const Orders = () => {
       params.set('page', currentPage.toString());
       params.set('limit', '20');
 
-      const { data } = await adminApi.get(`/admin/orders?${params}`);
+      const { data } = await adminApi.get(`/api/admin/orders?${params}`);
       setOrders(data.orders);
       setTotal(data.total);
       setTotalPages(data.totalPages);

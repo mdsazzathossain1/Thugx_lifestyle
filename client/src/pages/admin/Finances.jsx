@@ -17,9 +17,9 @@ const FinanceForm = ({ onSaved, initial }) => {
     setSaving(true);
     try {
       if (initial && initial._id) {
-        await adminApi.put(`/finances/${initial._id}`, { type, amount: Number(amount), category, notes });
+        await adminApi.put(`/api/admin/finances/${initial._id}`, { type, amount: Number(amount), category, notes });
       } else {
-        await adminApi.post('/finances', { type, amount: Number(amount), category, notes });
+        await adminApi.post('/api/admin/finances', { type, amount: Number(amount), category, notes });
       }
       onSaved();
     } catch (err) {
@@ -63,19 +63,19 @@ const Finances = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await adminApi.get('/finances');
+      const res = await adminApi.get('/api/admin/finances');
       setItems(res.data.items || []);
-      const s = await adminApi.get('/finances/summary');
+      const s = await adminApi.get('/api/admin/finances/summary');
       setSummary(s.data || { totals: { cost: 0, revenue: 0 }, net: 0 });
       // partner summary for chart
       try {
-        const p = await adminApi.get('/finances/summary/partners');
+        const p = await adminApi.get('/api/admin/finances/summary/partners');
         // normalize partner entries into { _id, revenue, cost }
         setPartnerData((p.data && p.data.partners) ? p.data.partners.map(pt => ({ _id: pt._id || 'Unknown', revenue: pt.revenue || 0, cost: pt.cost || 0 })) : []);
       } catch (err) { console.warn('Failed fetching partner summary', err); }
       // time series
       try {
-        const t = await adminApi.get('/finances/summary/timeseries');
+        const t = await adminApi.get('/api/admin/finances/summary/timeseries');
         setSeriesData(t.data.series || []);
       } catch (err) { console.warn('Failed fetching timeseries', err); }
     } catch (err) {
@@ -91,7 +91,7 @@ const Finances = () => {
   const remove = async (id) => {
     if (!confirm('Delete this item?')) return;
     try {
-      await adminApi.delete(`/finances/${id}`);
+      await adminApi.delete(`/api/admin/finances/${id}`);
       fetchData();
     } catch (err) { console.error(err); alert('Delete failed'); }
   };

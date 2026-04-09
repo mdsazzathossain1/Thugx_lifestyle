@@ -33,7 +33,7 @@ const ProductForm = () => {
     if (isEditing) {
       const fetchProduct = async () => {
         try {
-          const { data } = await adminApi.get(`/admin/products?search=`);
+          const { data } = await adminApi.get(`/api/admin/products?search=`);
           const product = data.products.find((p) => p._id === id);
           if (product) {
             reset({
@@ -68,7 +68,7 @@ const ProductForm = () => {
       const formData = new FormData();
       Array.from(files).forEach((file) => formData.append('media', file));
 
-      const { data } = await adminApi.post('/admin/upload', formData, {
+      const { data } = await adminApi.post('/api/admin/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
@@ -115,10 +115,10 @@ const ProductForm = () => {
       };
 
       if (isEditing) {
-        await adminApi.put(`/admin/products/${id}`, productData);
+        await adminApi.put(`/api/admin/products/${id}`, productData);
         toast.success('Product updated');
       } else {
-        await adminApi.post('/admin/products', productData);
+        await adminApi.post('/api/admin/products', productData);
         toast.success('Product created');
       }
 

@@ -28,7 +28,7 @@ const Coupons = () => {
   const fetchCoupons = async () => {
     try {
       setLoading(true);
-      const { data } = await adminApi.get('/admin/coupons');
+      const { data } = await adminApi.get('/api/admin/coupons');
       setCoupons(data.coupons || []);
     } catch (err) {
       console.error('Failed to fetch coupons:', err);
@@ -40,7 +40,7 @@ const Coupons = () => {
 
   const fetchUsers = async () => {
     try {
-      const { data } = await adminApi.get('/admin/users');
+      const { data } = await adminApi.get('/api/admin/users');
       setUsers(data.users || []);
     } catch (err) {
       console.error('Failed to fetch users:', err);
@@ -100,10 +100,10 @@ const Coupons = () => {
       };
 
       if (editingId) {
-        await adminApi.put(`/admin/coupons/${editingId}`, payload);
+        await adminApi.put(`/api/admin/coupons/${editingId}`, payload);
         toast.success('Coupon updated');
       } else {
-        await adminApi.post('/admin/coupons', payload);
+        await adminApi.post('/api/admin/coupons', payload);
         toast.success('Coupon created');
       }
 

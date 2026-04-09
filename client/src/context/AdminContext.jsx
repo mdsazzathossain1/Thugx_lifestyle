@@ -22,7 +22,7 @@ export const AdminProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    const { data } = await adminApi.post('/admin/login', { email, password });
+    const { data } = await adminApi.post('/api/admin/login', { email, password });
     localStorage.setItem('adminToken', data.token);
     localStorage.setItem('admin', JSON.stringify(data));
     setAdmin(data);

@@ -15,7 +15,7 @@ const OrderDetail = () => {
   useEffect(() => {
     const fetchOrder = async () => {
       try {
-        const { data } = await adminApi.get(`/admin/orders/${id}`);
+        const { data } = await adminApi.get(`/api/admin/orders/${id}`);
         setOrder(data);
       } catch (err) {
         console.error('Failed to fetch order:', err);
@@ -32,7 +32,7 @@ const OrderDetail = () => {
     if (!window.confirm('Confirm this payment?')) return;
     setUpdating(true);
     try {
-      const { data } = await adminApi.put(`/admin/orders/${id}/confirm`);
+      const { data } = await adminApi.put(`/api/admin/orders/${id}/confirm`);
       setOrder(data.order);
       toast.success('Payment confirmed');
     } catch (err) {
@@ -46,7 +46,7 @@ const OrderDetail = () => {
     if (!window.confirm(`Update order status to "${getStatusLabel(newStatus)}"?`)) return;
     setUpdating(true);
     try {
-      const { data } = await adminApi.put(`/admin/orders/${id}/status`, { status: newStatus });
+      const { data } = await adminApi.put(`/api/admin/orders/${id}/status`, { status: newStatus });
       setOrder(data.order);
       toast.success('Order status updated');
     } catch (err) {

@@ -50,7 +50,7 @@ const Products = () => {
   const handleDelete = async (id, name) => {
     if (!window.confirm(`Delete "${name}"? This cannot be undone.`)) return;
     try {
-      await adminApi.delete(`/admin/products/${id}`);
+        await adminApi.delete(`/api/admin/products/${id}`);
       toast.success('Product deleted');
       setProducts((prev) => prev.filter((p) => p._id !== id));
     } catch (err) {

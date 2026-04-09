@@ -93,7 +93,7 @@ const AdminSettings = () => {
     }
     setSaving(true);
     try {
-      const { data } = await adminApi.put('/admin/settings', settings);
+      const { data } = await adminApi.put('/api/admin/settings', settings);
       setSettings(data);
       toast.success('Settings saved successfully!');
     } catch {
