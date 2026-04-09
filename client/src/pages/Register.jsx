@@ -6,7 +6,6 @@ import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { BACKEND_URL } from '../utils/api';
-import { HiCheckCircle } from 'react-icons/hi';
 
 const registerSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
@@ -27,9 +26,9 @@ const Register = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get('redirect') || '/';
-  const { register: registerUser } = useAuth();
+  const { loginWithToken } = useAuth();
   const [submitting, setSubmitting] = useState(false);
-  const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [otpScreen, setOtpScreen] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [verifyLoading, setVerifyLoading] = useState(false);
@@ -55,9 +54,17 @@ const Register = () => {
 
       const result = await res.json();
       if (res.ok) {
-        setRegisteredEmail(data.email);
-        setRegistrationSuccess(true);
-        toast.success(result.message || 'Account created! Please verify your email.');
+        if (result.emailSent) {
+          // OTP email sent — show verification screen
+          setRegisteredEmail(result.email);
+          setOtpScreen(true);
+          toast.success(result.message || 'Check your email for a verification code.');
+        } else {
+          // Auto-verified (email unavailable) — log in directly
+          loginWithToken(result);
+          toast.success(result.message || 'Account created! You are now logged in.');
+          navigate(redirect, { replace: true });
+        }
       } else {
         toast.error(result.message || 'Registration failed');
       }
@@ -81,13 +88,12 @@ const Register = () => {
       });
       const data = await res.json();
       if (res.ok) {
-        toast.success(data.message || 'Email verified successfully');
-        navigate('/login');
+        toast.success('Email verified! Please log in.');
+        navigate('/login', { replace: true });
       } else {
         toast.error(data.message || 'Invalid or expired code');
       }
     } catch (err) {
-      console.error('Verify OTP error:', err);
       toast.error('An error occurred while verifying');
     } finally {
       setVerifyLoading(false);
@@ -108,56 +114,43 @@ const Register = () => {
         const data = await res.json();
         toast.error(data.message || 'Failed to resend code');
       }
-    } catch (err) {
-      console.error('Resend OTP error:', err);
+    } catch {
       toast.error('Failed to resend code');
     } finally {
       setResendLoading(false);
     }
   };
 
-  if (registrationSuccess) {
+  if (otpScreen) {
     return (
       <div className="section-padding">
         <div className="container-custom max-w-md">
           <div className="bg-white border border-border rounded-lg p-8">
             <div className="text-center space-y-6">
-              <div className="flex justify-center mb-4">
+              <div className="flex justify-center mb-2">
                 <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center text-white text-4xl">✉️</div>
               </div>
-              
-              <h2 className="text-2xl font-bold text-gray-800">Enter Verification Code</h2>
-
-              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
-                <p className="text-gray-700">We've sent a 6-digit verification code to:</p>
-                <p className="font-semibold text-gray-800 mt-2 break-all">{registeredEmail}</p>
+              <h2 className="text-2xl font-bold text-gray-800">Verify Your Email</h2>
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                <p className="text-gray-600 text-sm">We sent a 6-digit code to:</p>
+                <p className="font-semibold text-gray-800 mt-1 break-all">{registeredEmail}</p>
               </div>
-
-              <form onSubmit={handleVerifyOtp} className="w-full mt-4 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">Verification Code</label>
-                  <input
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                    className="input-field text-center tracking-widest text-lg"
-                    placeholder="Enter 6-digit code"
-                    maxLength={6}
-                  />
-                </div>
-
+              <form onSubmit={handleVerifyOtp} className="w-full space-y-4">
+                <input
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  className="input-field text-center tracking-widest text-lg"
+                  placeholder="Enter 6-digit code"
+                  maxLength={6}
+                />
                 <button type="submit" disabled={verifyLoading} className="btn-primary w-full">
                   {verifyLoading ? 'Verifying...' : 'Verify Code'}
                 </button>
-
-                <button type="button" onClick={handleResendOtp} disabled={resendLoading} className="w-full mt-2 border border-gray-200 rounded-lg py-2 text-sm">
+                <button type="button" onClick={handleResendOtp} disabled={resendLoading} className="w-full border border-gray-200 rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-50">
                   {resendLoading ? 'Resending...' : 'Resend Code'}
                 </button>
               </form>
-
-              <div className="text-sm text-gray-600 space-y-2">
-                <p>💡 <strong>Tip:</strong> Check spam/junk folder if you don't see the code.</p>
-                <p>⏰ <strong>Note:</strong> The code expires after a short time for security.</p>
-              </div>
+              <p className="text-xs text-gray-500">💡 Check spam/junk if you don't see it.</p>
             </div>
           </div>
         </div>

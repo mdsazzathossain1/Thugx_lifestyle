@@ -57,12 +57,13 @@ const getTransporter = () => {
   }
 
   if (process.env.EMAIL_SERVICE === 'gmail') {
-    // Gmail via port 587 STARTTLS — port 465 is often blocked on Railway
-    console.log('📧 Using Gmail (port 587) for email service');
+    // Gmail via port 587 STARTTLS with forced IPv4 (Railway doesn't route IPv6 outbound)
+    console.log('📧 Using Gmail (port 587, IPv4) for email service');
     return nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 587,
-      secure: false, // STARTTLS — more reliable than port 465 on cloud hosts
+      secure: false,
+      family: 4, // force IPv4 — fixes 'ENETUNREACH IPv6' on Railway
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASSWORD,
@@ -348,3 +349,38 @@ const sendOTPEmail = async (email, otp, purpose = 'reset', userName = '') => {
 
 // export OTP sender
 module.exports.sendOTPEmail = sendOTPEmail;
+
+// Send a simple welcome email — non-critical, failure is silently ignored by caller
+const sendWelcomeEmail = async (email, userName) => {
+  const transporter = getTransporter();
+  const mailOptions = {
+    from: getFromEmail(),
+    to: email,
+    subject: 'Welcome to Thugx Lifestyle! 🎉',
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+        <div style="background:linear-gradient(135deg,#667eea,#764ba2);padding:30px;border-radius:8px 8px 0 0;color:#fff;text-align:center;">
+          <h1 style="margin:0;">Welcome to Thugx Lifestyle!</h1>
+        </div>
+        <div style="border:1px solid #ddd;padding:30px;background:#f9f9f9;">
+          <p>Hi <strong>${userName}</strong>,</p>
+          <p>Your account has been created successfully. You can now browse our collection and place orders.</p>
+          <div style="text-align:center;margin:24px 0;">
+            <a href="${process.env.FRONTEND_URL || 'https://thugx-lifestyle.vercel.app'}/shop"
+               style="background:#667eea;color:#fff;padding:12px 30px;text-decoration:none;border-radius:5px;font-weight:bold;">
+              Shop Now
+            </a>
+          </div>
+        </div>
+        <div style="background:#333;color:#999;padding:16px;text-align:center;font-size:12px;border-radius:0 0 8px 8px;">
+          © 2026 Thugx Lifestyle
+        </div>
+      </div>
+    `,
+  };
+  const info = await transporter.sendMail(mailOptions);
+  console.log('Welcome email sent:', info.messageId);
+  return true;
+};
+
+module.exports.sendWelcomeEmail = sendWelcomeEmail;

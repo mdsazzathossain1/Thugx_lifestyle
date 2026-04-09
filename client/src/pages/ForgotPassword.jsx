@@ -11,7 +11,8 @@ const ForgotPassword = () => {
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPasswordOtp, setConfirmPasswordOtp] = useState('');
-  const [step, setStep] = useState(0); // 0 = send email, 1 = enter otp + new password
+  const [step, setStep] = useState(0); // 0=email form, 1=OTP form, 2=email failed (contact support)
+  const [supportEmail, setSupportEmail] = useState('thugxlifestyle6@gmail.com');
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -41,10 +42,17 @@ const ForgotPassword = () => {
 
       const data = await response.json();
 
-      // Always show success message for security (don't reveal if email exists)
-      setSubmitted(true);
-      setStep(1);
-      toast.success('If an account exists with this email, you will receive a password reset code');
+      if (!response.ok && data.emailFailed) {
+        // Email service is down — show contact support screen
+        if (data.supportEmail) setSupportEmail(data.supportEmail);
+        setSubmitted(true);
+        setStep(2);
+      } else {
+        // Email sent (or account not found — security: don't reveal which)
+        setSubmitted(true);
+        setStep(1);
+        toast.success('If an account exists with this email, you will receive a password reset code');
+      }
     } catch (error) {
       console.error('Forgot password error:', error);
       toast.error('An error occurred. Please try again later.');
@@ -96,7 +104,7 @@ const ForgotPassword = () => {
               )}
             </div>
             <h1 className="text-3xl font-bold">
-              {submitted ? 'Check Your Email' : 'Forgot Password'}
+              {step === 2 ? 'Contact Support' : submitted ? 'Check Your Email' : 'Forgot Password'}
             </h1>
           </div>
 
@@ -166,7 +174,42 @@ const ForgotPassword = () => {
               </>
             ) : (
               <>
-                {step === 1 ? (
+                {step === 2 ? (
+                  /* Email service unavailable — contact support */
+                  <div className="text-center space-y-6">
+                    <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-6">
+                      <p className="text-yellow-800 text-lg font-bold">⚠️ Email Service Unavailable</p>
+                      <p className="text-gray-600 text-sm mt-2">
+                        We couldn't send a reset code to <strong>{email}</strong> right now.
+                      </p>
+                    </div>
+
+                    <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded text-left">
+                      <p className="text-sm text-blue-900 font-semibold mb-2">To reset your password, contact us directly:</p>
+                      <a
+                        href={`mailto:${supportEmail}?subject=Password Reset Request&body=Please help me reset the password for: ${email}`}
+                        className="block text-center bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 px-6 rounded-lg hover:shadow-lg transition-all duration-300 mt-3"
+                      >
+                        📧 Email Support: {supportEmail}
+                      </a>
+                    </div>
+
+                    <div className="space-y-3 pt-4 border-t border-gray-200">
+                      <button
+                        onClick={() => { setSubmitted(false); setStep(0); }}
+                        className="w-full border-2 border-purple-600 text-purple-600 font-semibold py-3 rounded-lg hover:bg-purple-50 transition-colors duration-300"
+                      >
+                        Try Again
+                      </button>
+                      <Link
+                        to="/login"
+                        className="block text-center text-gray-500 text-sm py-2 hover:underline"
+                      >
+                        Back to Login
+                      </Link>
+                    </div>
+                  </div>
+                ) : step === 1 ? (
                   <form onSubmit={handleVerifyOtp} className="space-y-4">
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">Enter Code</label>
@@ -187,47 +230,7 @@ const ForgotPassword = () => {
                       {loading ? 'Resetting...' : 'Reset Password'}
                     </button>
                   </form>
-                ) : (
-                  <div className="text-center space-y-6">
-                    <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6">
-                      <p className="text-gray-700 text-lg">
-                        <strong>✅ Email Sent!</strong>
-                      </p>
-                      <p className="text-gray-600 text-sm mt-2">
-                        If an account exists with <strong>{email}</strong>, you'll receive a password reset code.
-                      </p>
-                    </div>
-
-                    <div className="text-left bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
-                      <p className="text-sm text-blue-900 font-semibold mb-2">What's next?</p>
-                      <ul className="text-sm text-blue-800 space-y-1">
-                        <li>✓ Check your email inbox</li>
-                        <li>✓ Enter the code you received here</li>
-                        <li>✓ Create a new password</li>
-                        <li>✓ Log in with your new password</li>
-                      </ul>
-                    </div>
-
-                    <p className="text-xs text-gray-500">
-                      ⏰ The reset code will expire in a short time for security reasons.
-                    </p>
-
-                    <div className="space-y-3 pt-4 border-t border-gray-200">
-                      <button
-                        onClick={() => { setSubmitted(false); setStep(0); }}
-                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 rounded-lg hover:shadow-lg transition-all duration-300"
-                      >
-                        Try Another Email
-                      </button>
-                      <Link
-                        to="/login"
-                        className="block text-center border-2 border-purple-600 text-purple-600 font-semibold py-3 rounded-lg hover:bg-purple-50 transition-colors duration-300"
-                      >
-                        Back to Login
-                      </Link>
-                    </div>
-                  </div>
-                )}
+                ) : null}
 
                 {/* Help Section */}
                 <div className="mt-6 pt-6 border-t border-gray-200">

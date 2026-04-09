@@ -1,6 +1,6 @@
 const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
-const { sendVerificationEmail, sendPasswordResetEmail, sendPasswordChangedEmail, sendOTPEmail } = require('../utils/emailService');
+const { sendVerificationEmail, sendPasswordResetEmail, sendPasswordChangedEmail, sendOTPEmail, sendWelcomeEmail } = require('../utils/emailService');
 const crypto = require('crypto');
 
 // POST /api/auth/register
@@ -27,7 +27,7 @@ const register = async (req, res) => {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
-    // Create user (initially unverified)
+    // Create user — start unverified; verified via OTP or auto-verified if email fails
     const user = await User.create({
       name,
       email,
@@ -37,34 +37,40 @@ const register = async (req, res) => {
       emailVerified: false,
     });
 
-    // Try to send OTP verification email
+    // Generate OTP and try to send verification email
+    const otp = user.generateOTP('registration', parseInt(process.env.OTP_EXPIRES_MINUTES || '10', 10));
+    await User.findByIdAndUpdate(user._id, {
+      otpHash: user.otpHash,
+      otpExpires: user.otpExpires,
+      otpPurpose: user.otpPurpose,
+      otpAttempts: user.otpAttempts,
+    });
+
     let emailSent = false;
     try {
-      const otp = user.generateOTP('registration', parseInt(process.env.OTP_EXPIRES_MINUTES || '10', 10));
-      await User.findByIdAndUpdate(user._id, {
-        otpHash: user.otpHash,
-        otpExpires: user.otpExpires,
-        otpPurpose: user.otpPurpose,
-        otpAttempts: user.otpAttempts,
-      });
       await sendOTPEmail(user.email, otp, 'registration', user.name);
       emailSent = true;
-      console.log(`✅ OTP sent to ${email}`);
     } catch (emailError) {
-      console.error('⚠️  OTP sending failed:', emailError.message);
-      // Delete the user so they can try registering again once email is fixed
-      await User.findByIdAndDelete(user._id);
-      return res.status(503).json({
-        message: 'Registration failed: could not send verification email. Please try again later.',
+      console.warn('⚠️  Registration OTP email failed, auto-verifying:', emailError.message);
+    }
+
+    if (emailSent) {
+      return res.status(201).json({
+        message: 'Account created! Check your email for a verification code.',
+        emailSent: true,
+        email: user.email,
       });
     }
 
+    // Email unavailable — auto-verify so the user is never blocked
+    await User.findByIdAndUpdate(user._id, { emailVerified: true });
     res.status(201).json({
-      message: 'Registration successful! Please check your email for the verification code.',
+      message: 'Account created! You are now logged in.',
+      emailVerified: true,
       _id: user._id,
       name: user.name,
       email: user.email,
-      emailVerified: false,
+      token: generateToken(user._id),
     });
   } catch (error) {
     console.error('Register error:', error);
@@ -224,19 +230,29 @@ const forgotPassword = async (req, res) => {
       });
     }
 
-    // Generate OTP for password reset (replace link flow)
+    // Generate OTP for password reset
+    const otp = user.generateOTP('reset', parseInt(process.env.OTP_EXPIRES_MINUTES || '10', 10));
+    await User.findByIdAndUpdate(user._id, {
+      otpHash: user.otpHash,
+      otpExpires: user.otpExpires,
+      otpPurpose: user.otpPurpose,
+      otpAttempts: user.otpAttempts,
+    });
+
+    let emailDelivered = false;
     try {
-      const otp = user.generateOTP('reset', parseInt(process.env.OTP_EXPIRES_MINUTES || '10', 10));
-      await User.findByIdAndUpdate(user._id, {
-        otpHash: user.otpHash,
-        otpExpires: user.otpExpires,
-        otpPurpose: user.otpPurpose,
-        otpAttempts: user.otpAttempts,
-      });
       await sendOTPEmail(user.email, otp, 'reset', user.name);
+      emailDelivered = true;
     } catch (emailError) {
-      console.error('OTP sending failed:', emailError);
-      return res.status(500).json({ message: 'Failed to send password reset code' });
+      console.error('OTP sending failed:', emailError.message);
+    }
+
+    if (!emailDelivered) {
+      return res.status(503).json({
+        emailFailed: true,
+        message: 'Email service is currently unavailable. Please contact support to reset your password.',
+        supportEmail: process.env.EMAIL_USER || 'thugxlifestyle6@gmail.com',
+      });
     }
 
     res.json({
