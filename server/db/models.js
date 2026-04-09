@@ -10,18 +10,32 @@ const adminCol = getCollection('admins');
 
 const Admin = {
   async findOne(query) {
-    return adminCol.findOne(query);
+    const admin = await adminCol.findOne(query);
+    return admin ? _attachAdminMethods(admin) : null;
   },
   async findById(id) {
-    return adminCol.findById(id);
+    const admin = await adminCol.findById(id);
+    return admin ? _attachAdminMethods(admin) : null;
   },
   async create(data) {
     const salt = await bcrypt.genSalt(12);
     const hashed = await bcrypt.hash(data.password, salt);
-    return adminCol.create({ ...data, password: hashed });
+    const created = await adminCol.create({ ...data, password: hashed });
+    return _attachAdminMethods(created);
   },
   async countDocuments(q) { return adminCol.countDocuments(q); },
 };
+
+// Helper function to attach methods to admin objects
+function _attachAdminMethods(admin) {
+  if (!admin) return null;
+
+  admin.comparePassword = async function (inputPassword) {
+    return await bcrypt.compare(inputPassword, this.password);
+  };
+
+  return admin;
+}
 
 // ─── User Model ──────────────────────────────────────────────────────────────
 const userCol = getCollection('users');
