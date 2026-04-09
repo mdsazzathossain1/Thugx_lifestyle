@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { Admin } = require('../db/models');  // Import Admin model for diagnostics
 const {
   adminLogin,
   getDashboard,
@@ -37,6 +38,69 @@ const {
   summaryByProduct,
   timeSeries,
 } = require('../controllers/financeController');
+
+// Public - Force reseed admin (for fixing corrupted passwords)
+router.get('/reseed-admin', async (req, res) => {
+  try {
+    console.log('🔄 Force reseeding admin...');
+    
+    const fs = require('fs');
+    const path = require('path');
+    const adminFilePath = path.join(__dirname, '../db/data/admins.json');
+    
+    // Backup old file
+    if (fs.existsSync(adminFilePath)) {
+      fs.copyFileSync(adminFilePath, adminFilePath + '.backup');
+      console.log('📦 Backed up old admin file');
+    }
+    
+    // Delete the admin data file to force fresh creation
+    if (fs.existsSync(adminFilePath)) {
+      fs.unlinkSync(adminFilePath);
+      console.log('🗑️  Deleted old admin records file');
+    }
+    
+    // Create fresh admin with new hash
+    const freshAdmin = await Admin.create({
+      username: 'admin',
+      email: 'admin@thugxlifestyle.com',
+      password: 'Admin@123',
+      role: 'super_admin',
+    });
+    
+    console.log('✅ Fresh admin reseeded successfully');
+    res.json({ 
+      success: true, 
+      message: 'Admin reseeded successfully! Please login now.',
+      email: 'admin@thugxlifestyle.com',
+      password: 'Admin@123'
+    });
+  } catch (err) {
+    console.error('❌ Reseed failed:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Public - Diagnostic endpoint (no auth required)
+router.get('/check-admin', async (req, res) => {
+  try {
+    const admin = await Admin.findOne({ email: 'admin@thugxlifestyle.com' });
+    if (admin) {
+      res.json({ 
+        exists: true, 
+        email: admin.email,
+        username: admin.username,
+        role: admin.role,
+        hasPassword: !!admin.password,
+        passwordHashPreview: admin.password ? admin.password.substring(0, 30) + '...' : 'MISSING'
+      });
+    } else {
+      res.status(404).json({ exists: false, message: 'Admin not found in database' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Public
 router.post('/login', adminLogin);

@@ -16,19 +16,26 @@ const adminLogin = async (req, res) => {
 
     const admin = await Admin.findOne({ email });
     console.log('👤 Admin found:', admin ? `Yes - ${admin.email}` : 'No');
+    console.log('🔍 Admin object keys:', admin ? Object.keys(admin) : 'N/A');
+    console.log('🔑 Password field exists:', admin && 'password' in admin ? 'Yes' : 'No');
+    console.log('🔑 Password field type:', admin && admin.password ? typeof admin.password : 'N/A');
     
     if (!admin) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    console.log('🔑 Password provided. Comparing with stored hash...');
+    console.log('🔑 Attempting password comparison...');
     const isMatch = await admin.comparePassword(password);
-    console.log('✔️ Password match result:', isMatch ? 'TRUE' : 'FALSE');
+    console.log('✔️ Password match result:', isMatch ? 'TRUE ✅' : 'FALSE ❌');
     
     if (!isMatch) {
+      // Extra diagnostic info when password fails
+      console.log('⚠️  Password mismatch for admin:', email);
+      console.log('📊 Admin stored password hash:', admin.password ? admin.password.substring(0, 20) + '...' : 'MISSING');
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    console.log('✨ Generating token for admin:', admin.email);
     res.json({
       _id: admin._id,
       username: admin.username,
@@ -37,7 +44,8 @@ const adminLogin = async (req, res) => {
       token: generateToken(admin._id, admin.role),
     });
   } catch (error) {
-    console.error('Admin login error:', error.message);
+    console.error('❌ Admin login error:', error.message);
+    console.error('📍 Stack:', error.stack);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
