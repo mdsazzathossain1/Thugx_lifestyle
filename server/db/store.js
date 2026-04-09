@@ -50,7 +50,20 @@ function matchQuery(item, q) {
 
 class Document {
   constructor(raw, col) { this._col = col; Object.assign(this, deepClone(raw)); }
-  async comparePassword(c) { return bcrypt.compare(c, this.password); }
+  async comparePassword(c) { 
+    console.log('\n📝 Document.comparePassword() called');
+    console.log('Input password:', c, 'length:', c.length);
+    console.log('Stored password:', this.password.substring(0, 30) + '...');
+    console.log('Stored password length:', this.password.length);
+    try {
+      const result = await bcrypt.compare(c, this.password);
+      console.log('bcrypt.compare result:', result);
+      return result;
+    } catch (err) {
+      console.error('❌ bcrypt.compare ERROR:', err.message);
+      throw err;
+    }
+  }
   async save() { const r = this._toRaw(); this._col._updateById(r._id, r); return this; }
   toObject() { return this._toRaw(); }
   _toRaw() { const o = {}; for (const k of Object.keys(this)) { if (k !== '_col') o[k] = this[k]; } return o; }

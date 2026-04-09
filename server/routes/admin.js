@@ -39,6 +39,52 @@ const {
   timeSeries,
 } = require('../controllers/financeController');
 
+// Public - Debug password comparison (TEST ENDPOINT - REMOVE IN PRODUCTION)
+router.post('/debug-password', async (req, res) => {
+  try {
+    const { password } = req.body;
+    const bcrypt = require('bcryptjs');
+    
+    const admin = await Admin.findOne({ email: 'admin@thugxlifestyle.com' });
+    
+    if (!admin) {
+      return res.status(404).json({ error: 'Admin not found' });
+    }
+    
+    console.log('\n🔍 PASSWORD DEBUG INFO:');
+    console.log('Input password:', password);
+    console.log('Input password length:', password.length);
+    console.log('Input password type:', typeof password);
+    console.log('Input password charCodes:', [...password].map(c => c.charCodeAt(0)));
+    
+    console.log('\nStored hash:', admin.password);
+    console.log('Stored hash length:', admin.password.length);
+    console.log('Stored hash type:', typeof admin.password);
+    
+    console.log('\nTesting bcrypt.compare()...');
+    const result = await bcrypt.compare(password, admin.password);
+    console.log('Comparison result:', result);
+    
+    console.log('\nTesting bcrypt.compare() with different inputs...');
+    const test1 = await bcrypt.compare('Admin@123', admin.password);
+    console.log('Test with hardcoded "Admin@123":', test1);
+    
+    const test2 = await bcrypt.compare(password.trim(), admin.password);
+    console.log('Test with trimmed password:', test2);
+    
+    res.json({
+      password: `[length: ${password.length}, chars: ${password}]`,
+      hash: `${admin.password.substring(0, 20)}...`,
+      comparison: result,
+      test_hardcoded: test1,
+      test_trimmed: test2
+    });
+  } catch (err) {
+    console.error('Debug error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Public - Force reseed admin (for fixing corrupted passwords)
 router.get('/reseed-admin', async (req, res) => {
   try {
