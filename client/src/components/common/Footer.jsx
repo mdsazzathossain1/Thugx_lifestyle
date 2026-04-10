@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { HiOutlineMail, HiOutlinePhone, HiOutlineLocationMarker } from 'react-icons/hi';
+import { FaFacebook } from 'react-icons/fa';
 import api from '../../utils/api';
 
 const Footer = () => {
@@ -31,6 +32,17 @@ const Footer = () => {
               Elevate your style with our curated collection of premium watches
               and sunglasses. Crafted for those who demand excellence.
             </p>
+            <div className="mt-5 flex items-center gap-3">
+              <a
+                href="https://web.facebook.com/profile.php?id=61584280311708"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="ThugX Lifestyle on Facebook"
+                className="w-9 h-9 rounded-full bg-white/10 hover:bg-secondary flex items-center justify-center transition-colors"
+              >
+                <FaFacebook className="w-4 h-4 text-white" />
+              </a>
+            </div>
           </div>
 
           {/* Quick Links */}
@@ -98,6 +110,17 @@ const Footer = () => {
                 <HiOutlineLocationMarker className="w-4 h-4 text-secondary mt-0.5" />
                 <span className="text-gray-400 text-sm">Dhaka, Bangladesh</span>
               </li>
+              <li className="flex items-center space-x-2">
+                <FaFacebook className="w-4 h-4 text-secondary" />
+                <a
+                  href="https://web.facebook.com/profile.php?id=61584280311708"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-400 text-sm hover:text-secondary transition-colors"
+                >
+                  ThugX Lifestyle
+                </a>
+              </li>
             </ul>
           </div>
         </div>
@@ -106,7 +129,16 @@ const Footer = () => {
           <p className="text-gray-500 text-sm">
             &copy; {new Date().getFullYear()} Thugx Lifestyle. All rights reserved.
           </p>
-          <div className="flex items-center space-x-6 mt-4 md:mt-0">
+          <div className="flex items-center gap-4 mt-4 md:mt-0">
+            <a
+              href="https://web.facebook.com/profile.php?id=61584280311708"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="ThugX Lifestyle on Facebook"
+              className="text-gray-500 hover:text-secondary transition-colors"
+            >
+              <FaFacebook className="w-5 h-5" />
+            </a>
             <span className="text-gray-500 text-sm">Privacy Policy</span>
             <span className="text-gray-500 text-sm">Terms of Service</span>
           </div>

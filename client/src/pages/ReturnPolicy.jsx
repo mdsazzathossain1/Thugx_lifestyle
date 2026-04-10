@@ -1,4 +1,5 @@
 import { HiRefresh, HiShieldCheck, HiExclamation, HiPhone, HiClock } from 'react-icons/hi';
+import { FaFacebook } from 'react-icons/fa';
 
 const Section = ({ icon: Icon, title, children, accent }) => (
   <div className={`bg-white border rounded-xl p-6 shadow-sm ${accent ? 'border-secondary/40' : 'border-border'}`}>
@@ -157,6 +158,9 @@ const ReturnPolicy = () => (
         <div className="flex flex-col sm:items-end gap-1 text-sm">
           <a href="tel:01410649273" className="text-secondary font-bold hover:underline text-base">01410649273</a>
           <a href="mailto:thugxlifestyle6@gmail.com" className="text-gray-500 hover:text-secondary transition-colors">thugxlifestyle6@gmail.com</a>
+          <a href="https://web.facebook.com/profile.php?id=61584280311708" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-secondary transition-colors flex items-center gap-1">
+            <FaFacebook className="w-3.5 h-3.5" /> ThugX Lifestyle
+          </a>
         </div>
       </div>
 
