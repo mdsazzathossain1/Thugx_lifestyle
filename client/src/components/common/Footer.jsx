@@ -66,13 +66,13 @@ const Footer = () => {
             </h4>
             <ul className="space-y-2">
               <li>
-                <span className="text-gray-400 text-sm">Shipping & Delivery</span>
+                <Link to="/shipping" className="text-gray-400 text-sm hover:text-secondary transition-colors">Shipping & Delivery</Link>
               </li>
               <li>
-                <span className="text-gray-400 text-sm">Return Policy</span>
+                <Link to="/returns" className="text-gray-400 text-sm hover:text-secondary transition-colors">Return Policy</Link>
               </li>
               <li>
-                <span className="text-gray-400 text-sm">FAQs</span>
+                <Link to="/faq" className="text-gray-400 text-sm hover:text-secondary transition-colors">FAQs</Link>
               </li>
               <li>
                 <span className="text-gray-400 text-sm">Size Guide</span>

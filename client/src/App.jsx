@@ -20,6 +20,9 @@ const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const Account = lazy(() => import('./pages/Account'));
+const ShippingDelivery = lazy(() => import('./pages/ShippingDelivery'));
+const ReturnPolicy = lazy(() => import('./pages/ReturnPolicy'));
+const FAQ = lazy(() => import('./pages/FAQ'));
 
 // Admin pages
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
@@ -52,6 +55,9 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/account/*" element={<Account />} />
+          <Route path="/shipping" element={<ShippingDelivery />} />
+          <Route path="/returns" element={<ReturnPolicy />} />
+          <Route path="/faq" element={<FAQ />} />
         </Route>
 
         {/* Admin routes */}
