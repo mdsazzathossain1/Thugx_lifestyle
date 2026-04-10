@@ -88,15 +88,15 @@ const Footer = () => {
             <ul className="space-y-3">
               <li className="flex items-center space-x-2">
                 <HiOutlineMail className="w-4 h-4 text-secondary" />
-                <span className="text-gray-400 text-sm">info@thugxlifestyle.com</span>
+                <span className="text-gray-400 text-sm">thugxlifestyle6@gmail.com</span>
               </li>
               <li className="flex items-center space-x-2">
                 <HiOutlinePhone className="w-4 h-4 text-secondary" />
-                <span className="text-gray-400 text-sm">+234 800 000 0000</span>
+                <span className="text-gray-400 text-sm">01410649273</span>
               </li>
               <li className="flex items-start space-x-2">
                 <HiOutlineLocationMarker className="w-4 h-4 text-secondary mt-0.5" />
-                <span className="text-gray-400 text-sm">Lagos, Nigeria</span>
+                <span className="text-gray-400 text-sm">Dhaka, Bangladesh</span>
               </li>
             </ul>
           </div>
