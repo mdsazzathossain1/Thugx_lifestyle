@@ -11,7 +11,7 @@ const AdminSettings = () => {
 
   useEffect(() => {
     adminApi
-      .get('/admin/settings')
+      .get('/api/admin/settings')
       .then((r) => setSettings(r.data))
       .catch(() => toast.error('Failed to load settings'))
       .finally(() => setLoading(false));
@@ -104,7 +104,7 @@ const AdminSettings = () => {
   };
 
   if (loading) return <LoadingSpinner />;
-  if (!settings) return <p className="text-gray-500">No settings found. Please restart the server.</p>;
+  if (!settings) return <p className="text-gray-500">Loading settings…</p>;
 
   return (
     <div className="max-w-3xl">
