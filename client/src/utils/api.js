@@ -56,6 +56,14 @@ adminApi.interceptors.response.use(
         window.location.href = '/admin/login';
       }
     }
+    if (error.response?.status === 429) {
+      // Attach retryAfter seconds directly on error for easy access by callers
+      const retryAfter =
+        error.response?.data?.retryAfter ||
+        parseInt(error.response?.headers?.['retry-after'] || '60', 10);
+      error.retryAfter = retryAfter;
+      console.warn(`[admin-api] rate limited on ${error.config?.url} — retry after ${retryAfter}s`);
+    }
     return Promise.reject(error);
   }
 );

@@ -11,12 +11,22 @@ const { body, validationResult } = require('express-validator');
  * General rate limiter - 100 requests per 15 minutes
  */
 const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.',
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  skip: (req) => process.env.NODE_ENV === 'development', // Skip rate limiting in development
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    const retrySecs = req.rateLimit?.resetTime
+      ? Math.max(1, Math.ceil((req.rateLimit.resetTime - Date.now()) / 1000))
+      : 900;
+    console.warn(`[rate-limit:general] blocked — ip=${req.ip} route=${req.originalUrl} retryAfter=${retrySecs}s time=${new Date().toISOString()}`);
+    res.set('Retry-After', String(retrySecs));
+    return res.status(429).json({
+      message: 'Too many requests. Please slow down and try again later.',
+      retryAfter: retrySecs,
+    });
+  },
+  skip: (req) => process.env.NODE_ENV === 'development',
 });
 
 /**
@@ -26,9 +36,19 @@ const generalLimiter = rateLimit({
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
-  message: 'Too many authentication attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  handler: (req, res) => {
+    const retrySecs = req.rateLimit?.resetTime
+      ? Math.max(1, Math.ceil((req.rateLimit.resetTime - Date.now()) / 1000))
+      : 900;
+    console.warn(`[rate-limit:auth] blocked — ip=${req.ip} route=${req.originalUrl} retryAfter=${retrySecs}s time=${new Date().toISOString()}`);
+    res.set('Retry-After', String(retrySecs));
+    return res.status(429).json({
+      message: 'Too many authentication attempts. Please wait before trying again.',
+      retryAfter: retrySecs,
+    });
+  },
   skip: (req) => process.env.NODE_ENV === 'development',
 });
 
@@ -36,11 +56,21 @@ const authLimiter = rateLimit({
  * Password reset limiter - 3 attempts per hour per IP
  */
 const passwordResetLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
+  windowMs: 60 * 60 * 1000,
   max: 3,
-  message: 'Too many password reset attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  handler: (req, res) => {
+    const retrySecs = req.rateLimit?.resetTime
+      ? Math.max(1, Math.ceil((req.rateLimit.resetTime - Date.now()) / 1000))
+      : 3600;
+    console.warn(`[rate-limit:password-reset] blocked — ip=${req.ip} route=${req.originalUrl} retryAfter=${retrySecs}s time=${new Date().toISOString()}`);
+    res.set('Retry-After', String(retrySecs));
+    return res.status(429).json({
+      message: 'Too many password reset attempts. Please wait before trying again.',
+      retryAfter: retrySecs,
+    });
+  },
   skip: (req) => process.env.NODE_ENV === 'development',
 });
 
@@ -49,11 +79,21 @@ const passwordResetLimiter = rateLimit({
  * 1000 requests per hour
  */
 const apiLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
+  windowMs: 60 * 60 * 1000,
   max: 1000,
-  message: 'Too many requests, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  handler: (req, res) => {
+    const retrySecs = req.rateLimit?.resetTime
+      ? Math.max(1, Math.ceil((req.rateLimit.resetTime - Date.now()) / 1000))
+      : 3600;
+    console.warn(`[rate-limit:api] blocked — ip=${req.ip} route=${req.originalUrl} retryAfter=${retrySecs}s time=${new Date().toISOString()}`);
+    res.set('Retry-After', String(retrySecs));
+    return res.status(429).json({
+      message: 'Too many requests. Please try again later.',
+      retryAfter: retrySecs,
+    });
+  },
   skip: (req) => process.env.NODE_ENV === 'development',
 });
 
