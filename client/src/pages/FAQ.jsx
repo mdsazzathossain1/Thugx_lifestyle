@@ -89,7 +89,7 @@ const faqs = [
       },
       {
         q: 'I forgot my password. How do I reset it?',
-        a: "Click "Forgot Password" on the login page and enter your email address. We'll send you a reset link. If you don't see the email, check your spam folder or contact us.",
+          a: "Click \u201cForgot Password\u201d on the login page and enter your email address. We\u2019ll send you a reset link. If you don\u2019t see the email, check your spam folder or contact us.",
       },
       {
         q: 'How do I update my profile information?',
