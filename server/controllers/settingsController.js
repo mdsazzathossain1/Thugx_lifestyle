@@ -4,10 +4,8 @@ const { Settings } = require('../db/models');
 // GET /api/admin/settings  (admin)
 const getSettings = async (req, res) => {
   try {
-    const settings = await Settings.get();
-    if (!settings) {
-      return res.status(404).json({ message: 'Settings not found' });
-    }
+    // upsert with no data = returns existing doc or creates one with schema defaults
+    const settings = await Settings.upsert({});
     res.json(settings);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });

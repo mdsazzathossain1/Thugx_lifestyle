@@ -4,6 +4,31 @@ const Product = require('../models/Product');
 const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
 const { uploadToCloudinary, useCloudinary } = require('../middleware/upload');
+const { Finance } = require('../db/models');
+
+// Helper: auto-record order revenue in Finance (idempotent — skips if already recorded)
+async function recordOrderRevenue(order, createdBy) {
+  try {
+    const existing = await Finance.findOne({ orderId: String(order._id), type: 'revenue', category: 'order_sale' });
+    if (existing) return;
+    const itemSummary = (order.items || []).map(i => `${i.productName} x${i.quantity}`).join(', ');
+    await Finance.create({
+      type:      'revenue',
+      amount:    order.totalAmount,
+      category:  'order_sale',
+      date:      new Date(),
+      reason:    `Order ${order.orderNumber}`,
+      notes:     itemSummary,
+      orderId:   String(order._id),
+      userId:    order.customer?.userId ? String(order.customer.userId) : null,
+      createdBy: createdBy || 'system',
+      source:    'order',
+      partner:   null,
+    });
+  } catch (e) {
+    console.error('recordOrderRevenue error:', e.message);
+  }
+}
 
 // POST /api/admin/login
 const adminLogin = async (req, res) => {
@@ -191,6 +216,7 @@ const confirmPayment = async (req, res) => {
     }
 
     await order.save();
+    await recordOrderRevenue(order, req.admin.username);
 
     res.json({ message: 'Payment confirmed', order });
   } catch (error) {
@@ -213,6 +239,7 @@ const updateOrderStatus = async (req, res) => {
       return res.status(404).json({ message: 'Order not found' });
     }
 
+    const prevStatus = order.status;
     order.status = status;
     order.statusHistory.push({
       status,
@@ -234,6 +261,11 @@ const updateOrderStatus = async (req, res) => {
     }
 
     await order.save();
+
+    // Auto-record revenue when order is confirmed (handles COD and direct confirms)
+    if (status === 'confirmed' && prevStatus !== 'confirmed') {
+      await recordOrderRevenue(order, req.admin.username);
+    }
 
     res.json({ message: 'Order status updated', order });
   } catch (error) {
