@@ -16,6 +16,7 @@ const {
   apiLimiter,
   sanitizeInput,
   preventSQLInjection,
+  preventMongoInjection,
   securityHeaders,
   getCorsOptions,
   helmetOptions,
@@ -52,6 +53,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Input sanitization and validation
 app.use(sanitizeInput);
 app.use(preventSQLInjection);
+app.use(preventMongoInjection);
 
 // ─── RATE LIMITING ────────────────────────────────────────────────────────
 // Apply general rate limiter to all API routes

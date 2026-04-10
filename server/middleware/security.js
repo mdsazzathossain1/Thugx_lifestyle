@@ -181,24 +181,17 @@ const getCorsOptions = () => {
     process.env.FRONTEND_URL,
     process.env.CLIENT_URL,
     // Additional allowed origins
-    process.env.ALLOWED_ORIGINS?.split(',').map((url) => url.trim()),
-    // Allow all Vercel deployments (thugx-lifestyle-*.vercel.app and thugx-lifestyle.vercel.app)
-    ...(process.env.NODE_ENV === 'production' ? [
-      /^https:\/\/thugx-lifestyle.*\.vercel\.app$/,
-      /^https:\/\/[a-z0-9-]+\.vercel\.app$/,
-    ] : []),
-  ].flat().filter(Boolean);
+    ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map((url) => url.trim()) : []),
+    // Only allow the specific project domain, not all *.vercel.app
+    'https://thugx-lifestyle.vercel.app',
+  ].filter(Boolean);
 
   return {
     origin: (origin, callback) => {
       if (!origin) {
         // Allow requests with no origin (mobile apps, Postman, etc.)
         callback(null, true);
-      } else if (allowedOrigins.some(allowedOrigin => 
-        allowedOrigin instanceof RegExp 
-          ? allowedOrigin.test(origin) 
-          : allowedOrigin === origin
-      )) {
+      } else if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         console.warn(`CORS blocked origin: ${origin}`);
@@ -210,6 +203,29 @@ const getCorsOptions = () => {
     allowedHeaders: ['Content-Type', 'Authorization'],
     maxAge: 3600, // 1 hour
   };
+};
+
+/**
+ * MongoDB Operator Injection Prevention
+ * Strips keys starting with '$' or containing '.' from req.body, req.query, req.params
+ * Prevents attacks like { "email": { "$gt": "" } } bypassing auth
+ */
+const preventMongoInjection = (req, res, next) => {
+  const sanitize = (obj) => {
+    if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+      for (const key of Object.keys(obj)) {
+        if (key.startsWith('$') || key.includes('.')) {
+          delete obj[key];
+        } else {
+          sanitize(obj[key]);
+        }
+      }
+    }
+    return obj;
+  };
+  if (req.body)  sanitize(req.body);
+  if (req.query) sanitize(req.query);
+  next();
 };
 
 /**
@@ -279,6 +295,7 @@ module.exports = {
   // Security
   sanitizeInput,
   preventSQLInjection,
+  preventMongoInjection,
   securityHeaders,
 
   // CORS & Helmet options

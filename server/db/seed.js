@@ -97,13 +97,15 @@ async function seedLocalStore() {
     // Seed admin
     const existingAdmin = await Admin.findOne({ email: 'admin@thugxlifestyle.com' });
     if (!existingAdmin) {
-      await Admin.create({
-        username: 'admin',
-        email: 'admin@thugxlifestyle.com',
-        password: 'Admin@123',
-        role: 'super_admin',
-      });
-      console.log('✅ Default admin created: admin@thugxlifestyle.com / Admin@123');
+    // Seed admin — password is set here only on FIRST install.
+    // Change it immediately via Admin Panel > Settings > Change Password.
+    await Admin.create({
+      username: 'admin',
+      email: 'admin@thugxlifestyle.com',
+      password: 'Thugx@Admin#2026!',
+      role: 'super_admin',
+    });
+    console.log('✅ Default admin created: admin@thugxlifestyle.com / Thugx@Admin#2026!');
     }
 
     // Seed products

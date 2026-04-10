@@ -34,34 +34,21 @@ async function recordOrderRevenue(order, createdBy) {
 const adminLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
-    console.log('🔐 Admin login attempt:', email);
 
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
-    const admin = await Admin.findOne({ email });
-    console.log('👤 Admin found:', admin ? `Yes - ${admin.email}` : 'No');
-    console.log('🔍 Admin object keys:', admin ? Object.keys(admin) : 'N/A');
-    console.log('🔑 Password field exists:', admin && 'password' in admin ? 'Yes' : 'No');
-    console.log('🔑 Password field type:', admin && admin.password ? typeof admin.password : 'N/A');
-    
+    const admin = await Admin.findOne({ email: String(email).toLowerCase().trim() });
     if (!admin) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    console.log('🔑 Attempting password comparison...');
     const isMatch = await admin.comparePassword(password);
-    console.log('✔️ Password match result:', isMatch ? 'TRUE ✅' : 'FALSE ❌');
-    
     if (!isMatch) {
-      // Extra diagnostic info when password fails
-      console.log('⚠️  Password mismatch for admin:', email);
-      console.log('📊 Admin stored password hash:', admin.password ? admin.password.substring(0, 20) + '...' : 'MISSING');
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    console.log('✨ Generating token for admin:', admin.email);
     res.json({
       _id: admin._id,
       username: admin.username,
@@ -70,9 +57,8 @@ const adminLogin = async (req, res) => {
       token: generateToken(admin._id, admin.role),
     });
   } catch (error) {
-    console.error('❌ Admin login error:', error.message);
-    console.error('📍 Stack:', error.stack);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Admin login error:', error.message);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -313,6 +299,32 @@ const uploadMedia = async (req, res) => {
   }
 };
 
+// PUT /api/admin/me/password
+const changeAdminPassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Current and new password are required' });
+    }
+    if (newPassword.length < 12) {
+      return res.status(400).json({ message: 'New password must be at least 12 characters' });
+    }
+    // Must have upper, lower, digit, special char
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/.test(newPassword)) {
+      return res.status(400).json({ message: 'New password must contain uppercase, lowercase, number, and special character' });
+    }
+    const admin = await require('../models/Admin').findById(req.admin._id);
+    if (!admin) return res.status(404).json({ message: 'Admin not found' });
+    const match = await admin.comparePassword(currentPassword);
+    if (!match) return res.status(401).json({ message: 'Current password is incorrect' });
+    admin.password = newPassword; // pre-save hook will hash it
+    await admin.save();
+    res.json({ message: 'Password updated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 module.exports = {
   adminLogin,
   getDashboard,
@@ -321,4 +333,5 @@ module.exports = {
   confirmPayment,
   updateOrderStatus,
   uploadMedia,
+  changeAdminPassword,
 };

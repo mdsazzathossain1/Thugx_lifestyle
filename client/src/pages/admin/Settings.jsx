@@ -2,12 +2,16 @@ import { useState, useEffect } from 'react';
 import { adminApi } from '../../utils/api';
 import toast from 'react-hot-toast';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-import { HiPlus, HiTrash, HiOutlineSave } from 'react-icons/hi';
+import { HiPlus, HiTrash, HiOutlineSave, HiLockClosed } from 'react-icons/hi';
 
 const AdminSettings = () => {
   const [settings, setSettings] = useState(null);
   const [loading, setLoading]   = useState(true);
   const [saving, setSaving]     = useState(false);
+
+  // Change password state
+  const [pwForm, setPwForm]   = useState({ current: '', next: '', confirm: '' });
+  const [pwSaving, setPwSaving] = useState(false);
 
   useEffect(() => {
     adminApi
@@ -100,6 +104,32 @@ const AdminSettings = () => {
       toast.error('Failed to save settings');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const changePassword = async (e) => {
+    e.preventDefault();
+    if (pwForm.next !== pwForm.confirm) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    if (pwForm.next.length < 12) {
+      toast.error('New password must be at least 12 characters');
+      return;
+    }
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-_=+[\]{};':"\\|,.<>/?])/.test(pwForm.next)) {
+      toast.error('New password must contain uppercase, lowercase, number, and special character');
+      return;
+    }
+    setPwSaving(true);
+    try {
+      await adminApi.put('/api/admin/me/password', { currentPassword: pwForm.current, newPassword: pwForm.next });
+      toast.success('Password changed successfully! Please log in again.');
+      setPwForm({ current: '', next: '', confirm: '' });
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to change password');
+    } finally {
+      setPwSaving(false);
     }
   };
 
@@ -321,6 +351,63 @@ const AdminSettings = () => {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* ── Change Password ── */}
+      <div className="bg-white border border-border rounded-lg p-6 mb-6 mt-6">
+        <div className="flex items-center gap-2 mb-1">
+          <HiLockClosed className="w-5 h-5 text-indigo-600" />
+          <h2 className="font-heading text-xl font-semibold">Change Admin Password</h2>
+        </div>
+        <p className="text-sm text-gray-500 mb-5">
+          Use a strong password — at least 12 characters with uppercase, lowercase, numbers, and special characters.
+        </p>
+        <form onSubmit={changePassword} className="space-y-4 max-w-md">
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Current Password</label>
+            <input
+              type="password"
+              value={pwForm.current}
+              onChange={e => setPwForm(f => ({ ...f, current: e.target.value }))}
+              className="input-field !py-2 text-sm"
+              placeholder="Enter current password"
+              required
+              autoComplete="current-password"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">New Password</label>
+            <input
+              type="password"
+              value={pwForm.next}
+              onChange={e => setPwForm(f => ({ ...f, next: e.target.value }))}
+              className="input-field !py-2 text-sm"
+              placeholder="Min 12 chars, upper+lower+digit+symbol"
+              required
+              autoComplete="new-password"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Confirm New Password</label>
+            <input
+              type="password"
+              value={pwForm.confirm}
+              onChange={e => setPwForm(f => ({ ...f, confirm: e.target.value }))}
+              className="input-field !py-2 text-sm"
+              placeholder="Repeat new password"
+              required
+              autoComplete="new-password"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={pwSaving}
+            className="btn-primary flex items-center space-x-2 !py-2 !px-5"
+          >
+            <HiLockClosed className="w-4 h-4" />
+            <span>{pwSaving ? 'Updating…' : 'Update Password'}</span>
+          </button>
+        </form>
       </div>
 
       {/* Bottom Save */}
